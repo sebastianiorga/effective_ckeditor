@@ -19,7 +19,7 @@ init = ->
     $('body').prepend("<div id='effective-ckeditor-top'></div>").addClass('effective-ckeditor-editting')
 
     $(window).on 'beforeunload', (event) -> promptToSaveIfDirty(event)
-    $(window).on 'unload', (event) -> $.cookie('effective_regions_editting', '', {path: '/', expires: -1})
+    # $(window).on 'unload', (event) -> $.cookie('effective_regions_editting', '', {path: '/', expires: -1})
 
     ckeditors.each ->
       editor_div = $(this)
