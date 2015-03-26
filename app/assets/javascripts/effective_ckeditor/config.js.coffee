@@ -1,7 +1,7 @@
 CKEDITOR.editorConfig = (config) ->
   config.startupShowBorders = true
 
-  config.extraPlugins = 'effective_regions,effective_assets,effective_menus,footnotes'
+  config.extraPlugins = 'effective_regions,effective_assets,effective_menus,footnotes,codemirror'
   config.format_tags = 'p;h1;h2;h3;h4;h5;h6;pre;div'
 
   config.templates = 'effective_regions'
