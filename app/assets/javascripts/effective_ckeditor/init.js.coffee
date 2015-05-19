@@ -1,4 +1,5 @@
 CKEDITOR.disableAutoInline = true
+CKEDITOR.dtd.$removeEmpty['i'] = false
 
 # Disable drag & dropping into regions (fixes issues with simple regions)
 $(document).on 'drop', '.effective-region', (event) -> event.preventDefault()
@@ -30,6 +31,8 @@ init = ->
         affixBootstrapMenu(editor_div)
         editor_div.on 'click', -> try initEditor(this)
 
+    initTemplates()
+
 initEditor = (editor_div) ->
   region = $(editor_div).data('effective-ckeditor')
 
@@ -54,14 +57,60 @@ initEditor = (editor_div) ->
     toolbar: toolbar
     allowedSnippets: $(editor_div).data('allowed-snippets')
     effectiveRegionType: region
-    customConfig: '/assets/effective_ckeditor/config.js'
+    customConfig: ''
     enterMode: enterMode
     shiftEnterMode: shiftEnterMode
     startupOutlineBlocks: startupOutlineBlocks
     disableNativeTableHandles: true
     sharedSpaces:
       top: 'effective-ckeditor-top'
+    startupShowBorders: true
+    extraPlugins: 'effective_regions,effective_assets,effective_menus,effective_references,codemirror'
+    format_tags: 'p;h1;h2;h3;h4;h5;h6;pre;div'
+    templates: 'effective_regions'
+    templates_files: []
+    templates_replaceContent: false
+    filebrowserWindowHeight: 600
+    filebrowserWindowWidth: 800
+    filebrowserBrowseUrl: '/effective/assets?only=images'
+    referencesEditorSelector:"'#' + editor.name"
+    toolbar_full: [
+      { name: 'save', items: ['Save', '-', 'NewPage'] },
+      { name: 'html', items: ['Sourcedialog', '-', 'ShowBlocks'] },
+      { name: 'editing', items: ['Undo', 'Redo'] },
+      { name: 'clipboard', items: ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord'] },
+      { name: 'justify', items: ['JustifyLeft', 'JustifyCenter', 'JustifyRight']}
+      { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript', '-', 'RemoveFormat'] },
+      ['Exit']
+      '/',
+      { name: 'definedstyles', items: ['Format'] },
+      { name: 'links', items: ['Link', 'Unlink'] },
+      { name: 'insert', items: ['Image', 'oembed', 'EffectiveAssets'] },
+      { name: 'lists', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'] },
+      { name: 'insert2', items: ['Table', 'EffectiveReferences', 'Blockquote', 'HorizontalRule', 'PageBreak'] },
+      { name: 'snippets', items: ['Templates', 'InsertSnippet'] }
+    ]
+    toolbar_snippets: [
+      ['Save', '-', 'NewPage'],
+      ['Sourcedialog', '-', 'ShowBlocks'],
+      ['Undo', 'Redo'],
+      { name: 'snippets', items: ['InsertSnippet'] },
+      ['Exit']
+    ]
+    toolbar_simple: [
+      ['Save', '-', 'NewPage'],
+      ['Undo', 'Redo'],
+      ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord'],
+      ['Exit']
+    ]
   )
+
+initTemplates = ->
+  templates = ((CKEDITOR.config['effective_regions'] || {})['templates'] || {})
+
+  CKEDITOR.addTemplates 'effective_regions',
+    imagesPath: CKEDITOR.getUrl( window.location.protocol + '//' + window.location.host + '/assets/effective/templates/' ),
+    templates: template for template in templates
 
 promptToSaveIfDirty = (event) ->
   dirty = false
@@ -87,4 +136,3 @@ affixBootstrapMenu = (editor_div) ->
     dropdown.on 'click.bs.dropdown', (event) -> event.preventDefault()
     dropdown.on 'click', (event) ->
       $(this).removeClass('open') and event.stopPropagation() if $(this).hasClass('open')
-

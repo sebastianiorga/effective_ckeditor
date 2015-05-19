@@ -33,9 +33,9 @@ SaveAll = {
     try
       button = $("##{this.uiItems[0]._.id}").find('.cke_button__save_icon')
 
-      button.css('background-image', 'url(/assets/ckeditor/plugins/effective_regions/icons/saving.png)')
+      button.addClass('saving')
       setTimeout(
-        -> button.css('background-image', 'url(/assets/ckeditor/plugins/effective_regions/icons/save.png)')
+        -> button.removeClass('saving')
         2000
       )
 
@@ -108,7 +108,7 @@ Regions = {
 }
 
 Snippets = {
-  all: -> CKEDITOR.config['effective_regions']['snippets']
+  all: -> ((CKEDITOR.config['effective_regions'] || {})['snippets'] || {})
 
   build: (editor, name, values) ->
     snippet = {}
@@ -167,11 +167,6 @@ Snippets = {
     snippet
 }
 
-Templates = {
-  all: -> CKEDITOR.config['effective_regions']['templates']
-  build: (definition) -> definition
-}
-
 BuildInsertSnippetDropdown = (editor, all_snippets) ->
   editor.ui.addRichCombo 'InsertSnippet',
     label: 'Insert Snippet',
@@ -194,8 +189,6 @@ BuildInsertSnippetDropdown = (editor, all_snippets) ->
 
 CKEDITOR.plugins.add 'effective_regions',
   requires: 'widget',
-  icons: 'save,exit',
-  hidpi: true,
   init: (editor) ->
     # Saving
     editor.ui.addButton 'Save', {label: 'Save', command: 'effectiveRegionsSaveAll'}
@@ -219,10 +212,4 @@ CKEDITOR.plugins.add 'effective_regions',
       snippet = Snippets.build(editor, name, values)
 
       editor.widgets.add(name, snippet)
-      CKEDITOR.dialog.add(name, snippet.dialog_url) if snippet.dialog_url
-
-# Templates
-# these are loaded once per page, not for each editor (as the snippets are above)
-CKEDITOR.addTemplates 'effective_regions',
-  imagesPath: CKEDITOR.getUrl( '/assets/effective/templates/' ),
-  templates: Templates.build(template) for template in Templates.all()
+      CKEDITOR.dialog.add(name, CKEDITOR.getUrl(window.location.protocol + '//' + window.location.host + snippet.dialog_url)) if snippet.dialog_url

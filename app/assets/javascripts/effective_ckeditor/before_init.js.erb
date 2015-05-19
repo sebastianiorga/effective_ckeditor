@@ -1,7 +1,7 @@
 window['CKEDITOR_BASEPATH'] = "/assets/ckeditor/";
 
 window.CKEDITOR_ASSETS_MAPPING = {
-<% Rails.application.assets.each_logical_path(->(path){ path =~ /ckeditor/ && (path.include?('effective_ckeditor/config') || !path.include?('effective_ckeditor')) }) do |asset| %>
+<% Rails.application.assets.each_logical_path(->(path){ (path.include?('ckeditor/plugins/') || path.include?('ckeditor/skins/') || path.include?('effective/snippets/') || path.include?('effective/templates/') || path.include?('ckeditor/contents.css')) && !path.include?('effective_ckeditor')}) do |asset| %>
   "<%= asset %>": "<%= asset_path(asset) %>",
 <% end %>
 }
@@ -12,7 +12,7 @@ window.CKEDITOR_GETURL = function( resource ) {
     resource = this.basePath + resource;
 
   // Add the timestamp, except for directories.
-  if ( resource.charAt( resource.length - 1 ) != '/' ){
+  if ( resource.charAt( resource.length - 1 ) != '/' ) {
     var url = resource.match( /^(.*?:\/\/[^\/]*)\/assets\/(.+)/ );
     if(url) resource = (CKEDITOR_ASSETS_MAPPING[url[2]] || '/assets/' + url[2]);
   }

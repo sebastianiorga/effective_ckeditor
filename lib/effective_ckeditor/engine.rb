@@ -9,9 +9,10 @@ module EffectiveCkeditor
       precompile = [
         'effective_ckeditor.js',
         'effective_ckeditor.css',
-        'effective_ckeditor/config.js',
-        'ckeditor/*',
-        'effective/snippets/*'
+        'ckeditor/contents.css',
+        'ckeditor/plugins/*',
+        'ckeditor/skins/*',
+        'effective/snippets/*',
       ]
 
       Rails.application.config.assets.precompile += precompile

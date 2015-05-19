@@ -95,7 +95,7 @@
         @menu.children('.actions').children('.add-item').hide()
         item.removeClass('open').find('.open').removeClass('open')
 
-        event.originalEvent.dataTransfer.setData('text/html', item[0].outerHTML)
+        event.originalEvent.dataTransfer.setData('Text', item[0].outerHTML)
 
         item.css('opacity', '0.4') # Show it slightly removed from the DOM
         @menu.addClass('dragging')
@@ -133,7 +133,7 @@
         # Don't allow to drop into myself or my own children
         return false if !@draggable? || @draggable.is(item) || @draggable.find(item).length > 0
 
-        new_item = $(event.originalEvent.dataTransfer.getData('text/html'))
+        new_item = $(event.originalEvent.dataTransfer.getData('Text'))
 
         item.before(new_item)
         @draggable.remove()
@@ -330,13 +330,15 @@ CKEDITOR.plugins.add 'effective_menus',
                 id: 'source',
                 type: 'radio',
                 label: 'Link Type',
-                items: [['Page', 'Page'], ['URL', 'URL'], ['Route', 'Route'], ['Divider', 'Divider']]
+                items: [['Page', 'Page'], ['URL', 'URL'], ['Route', 'Route'], ['Divider', 'Divider'], ['Dropdown', 'Dropdown']]
                 setup: (element) ->
                   menuable_id = element.children('.menu-item').children("input[name$='[menuable_id]']").val() || ''
                   special = element.children('.menu-item').children("input[name$='[special]']").val() || ''
                   url = element.children('.menu-item').children("input[name$='[url]']").val() || ''
 
-                  if menuable_id.length > 0
+                  if this.getDialog().effective_menu_item.hasClass('dropdown')
+                    this.setValue('Dropdown')
+                  else if menuable_id.length > 0
                     this.setValue('Page')
                   else if special == 'divider'
                     this.setValue('Divider')
@@ -348,12 +350,18 @@ CKEDITOR.plugins.add 'effective_menus',
                     this.setValue('Page')
 
                 onChange: (event) ->
+                  if this.getValue() != 'Dropdown'
+                    radios = $('#' + this.getDialog().getContentElement('item', 'source').getElement().getId())
+                    radios.find('input').prop('disabled', false)
+                    radios.find("input[value='Dropdown']").prop('disabled', true)
+
                   if this.getValue() == 'Page'
                     this.getDialog().getContentElement('item', 'title').getElement().show()
                     this.getDialog().getContentElement('item', 'menuable_id').getElement().show()
 
                     this.getDialog().getContentElement('item', 'url').getElement().hide()
                     this.getDialog().getContentElement('item', 'special').getElement().hide()
+                    this.getDialog().getContentElement('item', 'dropdown').getElement().hide()
 
                   if this.getValue() == 'URL'
                     this.getDialog().getContentElement('item', 'title').getElement().show()
@@ -361,12 +369,23 @@ CKEDITOR.plugins.add 'effective_menus',
 
                     this.getDialog().getContentElement('item', 'menuable_id').getElement().hide()
                     this.getDialog().getContentElement('item', 'special').getElement().hide()
+                    this.getDialog().getContentElement('item', 'dropdown').getElement().hide()
 
                   if this.getValue() == 'Divider'
                     this.getDialog().getContentElement('item', 'url').getElement().hide()
                     this.getDialog().getContentElement('item', 'title').getElement().hide()
                     this.getDialog().getContentElement('item', 'menuable_id').getElement().hide()
                     this.getDialog().getContentElement('item', 'special').getElement().hide()
+                    this.getDialog().getContentElement('item', 'dropdown').getElement().hide()
+
+                  if this.getValue() == 'Dropdown'
+                    this.getDialog().getContentElement('item', 'title').getElement().show()
+                    this.getDialog().getContentElement('item', 'dropdown').getElement().show()
+                    $('#' + this.getDialog().getContentElement('item', 'source').getElement().getId()).find('input').prop('disabled', true)
+
+                    this.getDialog().getContentElement('item', 'special').getElement().hide()
+                    this.getDialog().getContentElement('item', 'url').getElement().hide()
+                    this.getDialog().getContentElement('item', 'menuable_id').getElement().hide()
 
                   if this.getValue() == 'Route'
                     this.getDialog().getContentElement('item', 'title').getElement().show()
@@ -374,32 +393,28 @@ CKEDITOR.plugins.add 'effective_menus',
 
                     this.getDialog().getContentElement('item', 'menuable_id').getElement().hide()
                     this.getDialog().getContentElement('item', 'url').getElement().hide()
+                    this.getDialog().getContentElement('item', 'dropdown').getElement().hide()
               },
               {
                 id: 'menuable_id',
                 type: 'select',
                 label: 'Page',
-                items: (
-                  pages = []
-                  $.ajax
-                    url: '/admin/pages'
-                    dataType: 'json'
-                    async: false
-                    complete: (data) -> pages = data.responseJSON
-                  pages
-                ),
+                items: ((CKEDITOR.config['effective_regions'] || {})['pages'] || [['', '']]),
                 setup: (element) ->
                   this.setValue(element.children('.menu-item').children("input[name$='[menuable_id]']").val())
                 commit: (element) ->
-                  if this.getElement().isVisible()
+                  if this.getDialog().getValueOf('item', 'source') == 'Page'
                     element.children('.menu-item').children("input[name$='[menuable_id]']").val(this.getValue())
                     element.children('.menu-item').children("input[name$='[menuable_type]']").val('Effective::Page')
+                  else if this.getDialog().getValueOf('item', 'source') == 'Dropdown'
+                    # Nothing
                   else
                     element.children('.menu-item').children("input[name$='[menuable_id]']").val('')
                     element.children('.menu-item').children("input[name$='[menuable_type]']").val('')
                 validate: ->
-                  if this.getElement().isVisible() && (this.getValue() || '').length == 0
-                    CKEDITOR.dialog.validate.notEmpty('please select a page').apply(this)
+                  if this.getDialog().getValueOf('item', 'source') == 'Page' && (this.getValue() || '').length == 0
+                    if this.getDialog().effective_menu_item.hasClass('dropdown') == false
+                      CKEDITOR.dialog.validate.notEmpty('please select a page').apply(this)
               },
               {
                 id: 'url',
@@ -408,12 +423,13 @@ CKEDITOR.plugins.add 'effective_menus',
                 setup: (element) ->
                   this.setValue(element.children('.menu-item').children("input[name$='[url]']").val())
                 commit: (element) ->
-                  if this.getElement().isVisible() then value = this.getValue() else value = ''
+                  if this.getDialog().getValueOf('item', 'source') == 'URL' then value = this.getValue() else value = ''
 
-                  element.children('.menu-item').children("input[name$='[url]']").val(value)
-                  element.children('a').attr('href', value || '#')
+                  if this.getDialog().getValueOf('item', 'source') != 'Dropdown'
+                    element.children('.menu-item').children("input[name$='[url]']").val(value)
+                    element.children('a').attr('href', value || '#')
                 validate: ->
-                  if this.getElement().isVisible() && (this.getValue() || '').length == 0
+                  if this.getDialog().getValueOf('item', 'source') == 'URL' && (this.getValue() || '').length == 0
                     CKEDITOR.dialog.validate.notEmpty('please enter a URL').apply(this)
               },
               {
@@ -426,8 +442,10 @@ CKEDITOR.plugins.add 'effective_menus',
                   if this.getDialog().getValueOf('item', 'source') == 'Divider'
                     element.children('.menu-item').children("input[name$='[special]']").val('divider')
                     element.children('a').html('')
-                  else if this.getElement().isVisible()
+                  else if this.getDialog().getValueOf('item', 'source') == 'Route'
                     element.children('.menu-item').children("input[name$='[special]']").val(this.getValue())
+                  else if this.getDialog().getValueOf('item', 'source') == 'Dropdown'
+                    # Nothing
                   else
                     element.children('.menu-item').children("input[name$='[special]']").val('')
                   # There is more stuff in the classes commit
@@ -435,9 +453,14 @@ CKEDITOR.plugins.add 'effective_menus',
                   if this.getDialog().getValueOf('item', 'source') == 'Divider'
                     if this.getDialog().effective_menu_item.hasClass('dropdown')
                       CKEDITOR.dialog.validate.notEmpty('cannot convert existing dropdown menu to a Divider').apply(this)
-                  else if this.getElement().isVisible()
+                  else if this.getDialog().getValueOf('item', 'source') == 'Route'
                     if (this.getValue() || '').length == 0
                       CKEDITOR.dialog.validate.notEmpty('please enter a route').apply(this)
+              },
+              {
+                id: 'dropdown',
+                type: 'html',
+                html: 'Dropdown menu items cannot also be links.<br><br>To change this dropdown back to a regular menu item,<br>please click Cancel and then use the drag & drop<br>functionality to remove all its child menu items.'
               }
             ] # /tab1 elements
           },
@@ -455,7 +478,9 @@ CKEDITOR.plugins.add 'effective_menus',
                 onChange: (event) ->
                   if this.getValue() == true
                     this.getDialog().setValueOf('permissions', 'signed_in', false)
-                    this.getDialog().setValueOf('permissions', 'roles_mask', '')
+
+                    for role, index in ((CKEDITOR.config['effective_regions'] || {})['roles'] || [])
+                      this.getDialog().setValueOf('permissions', "role_#{role[1]}", false)
               },
               {
                 id: 'signed_in',
@@ -467,30 +492,50 @@ CKEDITOR.plugins.add 'effective_menus',
                 onChange: (event) ->
                   if this.getValue() == true
                     this.getDialog().setValueOf('permissions', 'signed_out', false)
-              },
+              }
               {
-                id: 'roles_mask',
-                type: 'text',
-                label: 'Roles Mask',
-                setup: (element) ->
-                  value = parseInt(element.children('.menu-item').children("input[name$='[roles_mask]']").val(), 10)
-                  if value > 0 then this.setValue(value) else this.setValue('')
+                id: 'roles',
+                type: 'vbox',
+                width: '100%',
+                children:
+                  [{type: 'html', html: '<p>Only visible when signed in as a user with one or more<br>of the following website roles:</p>'}].concat(
+                    for role, index in ((CKEDITOR.config['effective_regions'] || {})['roles'] || [])
+                      bit_mask = Math.pow(2, index)
+                      # role == [description, title, 'disabled' or null]   We're not using description
+                      {
+                        id: "role_#{role[1]}",
+                        type: 'checkbox',
+                        label: "#{role[1]}",
+                        className: "role_#{bit_mask}_#{role[2]}_box"
+                        setup: (element) ->
+                          this.disable() if (this.className.split('_')[2] == 'disabled')
+
+                          roles_mask = parseInt(element.children('.menu-item').children("input[name$='[roles_mask]']").val(), 10) || 0
+                          roles_mask = 0 if roles_mask == -1
+                          bit_mask = parseInt(this.className.split('_')[1], 10) || 0
+
+                          this.setValue((bit_mask & roles_mask) != 0)
+                        onClick: (event) ->
+                          if this.getValue() == true # Ensure Only visible when signed in is checked too if we have roles
+                            this.getDialog().setValueOf('permissions', 'signed_in', true)
+                            this.getDialog().setValueOf('permissions', 'signed_out', false)
+                      }
+                  )
                 commit: (element) ->
-                  if ('' + this.getValue()).length > 0
-                    element.children('.menu-item').children("input[name$='[roles_mask]']").val(this.getValue())
+                  roles_mask = 0
+
+                  for role, index in ((CKEDITOR.config['effective_regions'] || {})['roles'] || [])
+                    if this.getDialog().getValueOf('permissions', "role_#{role[1]}") == true
+                      roles_mask += Math.pow(2, index)
+
+                  if roles_mask > 0
+                    element.children('.menu-item').children("input[name$='[roles_mask]']").val(roles_mask)
                   else if this.getDialog().getValueOf('permissions', 'signed_in') == true
                     element.children('.menu-item').children("input[name$='[roles_mask]']").val(0)
                   else if this.getDialog().getValueOf('permissions', 'signed_out') == true
                     element.children('.menu-item').children("input[name$='[roles_mask]']").val(-1)
                   else
                     element.children('.menu-item').children("input[name$='[roles_mask]']").val('')
-                onKeyup: (event) ->
-                  if ('' + this.getValue()).length > 0
-                    this.getDialog().setValueOf('permissions', 'signed_in', true)
-                    this.getDialog().setValueOf('permissions', 'signed_out', false)
-                validate: ->
-                  if ('' + this.getValue()).length > 0
-                    CKEDITOR.dialog.validate.integer('roles_mask must be an integer').apply(this)
               }
             ]
           },
@@ -537,11 +582,11 @@ CKEDITOR.plugins.add 'effective_menus',
         onShow: -> this.setupContent(this.effective_menu_item) if this.effective_menu_item
 
         onOk: ->
-          this.commitContent(this.effective_menu_item)
-          this.effective_menu_item.removeClass('new-item') if this.effective_menu_item.hasClass('new-item')
-          this.effective_menu_item = undefined
+          if this.effective_menu_item
+            this.commitContent(this.effective_menu_item)
+            this.effective_menu_item.removeClass('new-item') if this.effective_menu_item.hasClass('new-item')
 
         onCancel: ->
-          this.effective_menu_item.remove() if this.effective_menu_item.hasClass('new-item')
-          this.effective_menu_item = undefined
+          if this.effective_menu_item && this.effective_menu_item.hasClass('new-item')
+            this.effective_menu_item.remove()
       }
