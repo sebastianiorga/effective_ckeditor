@@ -10,5 +10,6 @@
 //= require ./ckeditor/plugins/effective_menus/plugin
 //= require ./ckeditor/plugins/effective_references/plugin
 //= require ./ckeditor/plugins/effective_regions/plugin
+//= require ./ckeditor/plugins/codemirror/plugin
 
 //= require ./effective_ckeditor/init
