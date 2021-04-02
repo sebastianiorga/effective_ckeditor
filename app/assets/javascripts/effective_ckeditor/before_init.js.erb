@@ -6,11 +6,11 @@ window['CKEDITOR_BASEPATH'] = "/assets/ckeditor/";
 
 window.CKEDITOR_ASSETS_MAPPING = {
   <% if sprockets.respond_to?(:each_file) %>
-    <% sprockets.each_file.select { |path| whitelist.any? { |str| path.include?(str) } && blacklist.none? { |str| path.include?(str) } }.each do |asset| %>
+    <% sprockets.each_file.each do |asset| %>
       "<%= asset %>": "<%= asset_path(asset) %>",
     <% end %>
   <% else %>
-    <% sprockets.each_logical_path(->(path, _) { whitelist.any? { |str| path.include?(str) } && blacklist.none? { |str| path.include?(str) } }) do |asset| %>
+    <% sprockets.each do |asset| %>
       "<%= asset %>": "<%= asset_path(asset) %>",
     <% end %>
   <% end %>
